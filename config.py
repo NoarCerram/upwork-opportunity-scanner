@@ -3,7 +3,26 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-DB_PATH = os.getenv("DB_PATH", "upwork_scanner.db")
+
+def get_database_url():
+    """
+    Reads DATABASE_URL from environment or Streamlit secrets.
+    On Streamlit Community Cloud, set this in App Settings → Secrets:
+        DATABASE_URL = "postgresql://postgres:[password]@db.[ref].supabase.co:5432/postgres"
+    Locally, set it in .env.
+    """
+    # Try Streamlit secrets first (available in Cloud deployments)
+    try:
+        import streamlit as st
+        url = st.secrets.get("DATABASE_URL")
+        if url:
+            return url
+    except Exception:
+        pass
+    return os.getenv("DATABASE_URL")
+
+
+DATABASE_URL = get_database_url()
 
 # Combined score weights (must sum to 1.0)
 WEIGHTS = {
