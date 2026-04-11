@@ -11,12 +11,11 @@ from config import DATABASE_URL
 @contextmanager
 def get_conn():
     conn = psycopg2.connect(DATABASE_URL)
+    # autocommit=True is required when using Supabase's PgBouncer pooler
+    # (transaction mode). It also works fine with direct connections.
+    conn.autocommit = True
     try:
         yield conn
-        conn.commit()
-    except Exception:
-        conn.rollback()
-        raise
     finally:
         conn.close()
 
