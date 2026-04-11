@@ -1,3 +1,4 @@
+import os
 import re
 import csv
 import io
@@ -5,6 +6,14 @@ import json
 from datetime import datetime
 
 import streamlit as st
+
+# Inject DATABASE_URL from Streamlit secrets into the environment before
+# any module that reads config.DATABASE_URL at import time is loaded.
+if "DATABASE_URL" not in os.environ:
+    try:
+        os.environ["DATABASE_URL"] = st.secrets["DATABASE_URL"]
+    except (KeyError, FileNotFoundError):
+        pass
 
 import db
 import scorer
