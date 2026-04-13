@@ -31,6 +31,7 @@ Requirements:
 import argparse
 import asyncio
 import json
+import os
 import sys
 from urllib.parse import urlencode
 
@@ -45,7 +46,13 @@ import proposal as proposal_mod
 
 # ── Constants ─────────────────────────────────────────────────────────────────
 
-CHROME_PROFILE = r"C:\Users\arnau\AppData\Local\Google\Chrome\User Data"
+# Chrome profile path — set CHROME_PROFILE_PATH in your .env or environment.
+# Windows example: C:\Users\YourName\AppData\Local\Google\Chrome\User Data
+# macOS example:   /Users/yourname/Library/Application Support/Google/Chrome
+# Linux example:   /home/yourname/.config/google-chrome
+_DEFAULT_PROFILE = os.path.join(os.path.expanduser("~"), ".config", "google-chrome")
+CHROME_PROFILE = os.getenv("CHROME_PROFILE_PATH", _DEFAULT_PROFILE)
+
 UPWORK_SEARCH_BASE = "https://www.upwork.com/nx/search/jobs/"
 SCROLL_PAUSE = 1.5        # seconds between scrolls
 PAGE_LOAD_TIMEOUT = 15000 # ms

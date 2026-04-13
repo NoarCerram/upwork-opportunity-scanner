@@ -128,19 +128,29 @@ def _extract_budget(text):
 
 
 _SKILL_VOCAB = [
-    "Python", "JavaScript", "TypeScript", "React", "Node.js", "PHP", "WordPress",
-    "Shopify", "HubSpot", "Salesforce", "Pipedrive", "Zoho",
-    "Excel", "Google Sheets", "Airtable", "Notion", "Asana", "Monday.com", "Trello",
-    "Data Entry", "Virtual Assistance", "Research", "Lead Generation",
+    # ── 3D & Product Visual (primary niche) ──────────────────────────────────
+    "3D Rendering", "3D Modeling", "Product Visualization", "Product Mockup",
+    "3D Product Mockup", "3D Product Render", "Lifestyle Render",
+    "Blender", "Cinema 4D", "Keyshot", "Octane Render", "V-Ray",
+    "Adobe Dimension", "Substance Painter", "Marvelous Designer",
+    "Midjourney", "AI Rendering", "AI Image Generation", "Stable Diffusion",
+    "Product Photography", "Product Photography Replacement",
+    "360 Product Render", "Packaging Design", "3D Packaging Mockup",
+    "Amazon Listing Optimization", "Amazon A+ Content", "A+ Content",
+    "Shopify Product Images", "Ecommerce Product Images",
+    "Listing Image Design", "Product Visual Design",
+    "Infographic Design", "Product Infographic",
+    # ── Design tools ─────────────────────────────────────────────────────────
+    "Adobe Photoshop", "Adobe Illustrator", "Adobe After Effects",
+    "Canva", "Figma", "Adobe Creative Suite",
+    "PowerPoint", "Google Slides",
+    # ── Ecommerce / platforms ─────────────────────────────────────────────────
+    "Shopify", "Amazon FBA", "WooCommerce", "BigCommerce", "Magento",
+    # ── General (kept for fallback parsing) ──────────────────────────────────
+    "Python", "JavaScript", "WordPress",
+    "Excel", "Google Sheets", "Airtable", "Notion",
     "SEO", "Content Writing", "Copywriting", "Social Media",
-    "Recruiting", "LinkedIn", "Email Marketing", "Mailchimp", "Klaviyo",
-    "SQL", "MySQL", "PostgreSQL", "MongoDB",
-    "Zapier", "Make", "n8n", "Automation",
-    "Customer Service", "Email Management",
-    "QuickBooks", "Xero", "Bookkeeping",
-    "Project Management", "Operations",
-    "Web Scraping", "Data Mining",
-    "PowerPoint", "Google Slides", "Canva", "Figma",
+    "Email Marketing",
 ]
 
 

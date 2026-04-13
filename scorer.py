@@ -2,7 +2,7 @@ import json
 import re
 from datetime import datetime, timezone
 
-from config import AUTOMATION_SIGNALS, AUTOMATION_PENALTIES, WEIGHTS, WIN_THRESHOLDS
+from config import NICHE_SIGNALS, NICHE_NEGATIVE_KEYWORDS, WEIGHTS, WIN_THRESHOLDS
 
 
 def _lower(text):
@@ -15,46 +15,52 @@ def _count_signals(text, signals):
     return len(matched), matched
 
 
-# ── Automation Opportunity Score ──────────────────────────────────────────────
+# ── Niche Fit / Specialization Score ─────────────────────────────────────────
+# Stored as automation_score in the DB for schema compatibility.
+# Measures how well this job matches the 3D Product Visual Specialist angle.
 
-def score_automation(job):
+def score_specialization(job):
     combined = " ".join([
         job.get("title") or "",
         job.get("description_clean") or job.get("description_raw") or "",
         job.get("skills_json") or "",
     ])
 
-    rep_n, rep_m = _count_signals(combined, AUTOMATION_SIGNALS["repetitive_task"])
-    struct_n, struct_m = _count_signals(combined, AUTOMATION_SIGNALS["structured_input"])
-    out_n, out_m = _count_signals(combined, AUTOMATION_SIGNALS["recurring_output"])
-    role_n, role_m = _count_signals(combined, AUTOMATION_SIGNALS["operations_role"])
-    scale_n, scale_m = _count_signals(combined, AUTOMATION_SIGNALS["scale_volume"])
-    pen_n, pen_m = _count_signals(combined, AUTOMATION_PENALTIES)
+    # Primary keywords — exact niche phrases (highest weight)
+    prim_n, prim_m = _count_signals(combined, NICHE_SIGNALS["primary_keywords"])
+    prim_s = min(prim_n / 2 * 100, 100)   # 2 primary hits = full score
 
-    rep_s = min(rep_n / 3 * 100, 100)
-    struct_s = min(struct_n / 3 * 100, 100)
-    out_s = min(out_n / 2 * 100, 100)
-    role_s = min(role_n / 2 * 100, 100)
-    scale_s = min(scale_n / 2 * 100, 100)
-    pen_s = min(pen_n / 2 * 100, 100)
+    # Secondary keywords — supporting descriptors (moderate weight)
+    sec_n, sec_m = _count_signals(combined, NICHE_SIGNALS["secondary_keywords"])
+    sec_s = min(sec_n / 3 * 100, 100)     # 3 secondary hits = full score
+
+    # HOT signals — buyer intent / perfect job indicators (bonus)
+    hot_n, hot_m = _count_signals(combined, NICHE_SIGNALS["hot_signals"])
+    hot_s = min(hot_n / 2 * 100, 100)     # 2 hot signals = full score
+
+    # Ecommerce context — confirms correct buyer profile
+    ec_n, ec_m = _count_signals(combined, NICHE_SIGNALS["ecommerce_context"])
+    ec_s = min(ec_n / 2 * 100, 100)       # 2 context signals = full score
+
+    # Negative keyword penalty — off-niche work
+    neg_n, neg_m = _count_signals(combined, NICHE_NEGATIVE_KEYWORDS)
+    neg_s = min(neg_n * 100, 100)          # 1 negative = full penalty
 
     raw = (
-        rep_s * 0.30
-        + struct_s * 0.25
-        + out_s * 0.20
-        + role_s * 0.15
-        + scale_s * 0.10
-    ) - (pen_s * 0.25)
+        prim_s * 0.40   # Primary keywords are the strongest niche signal
+        + sec_s * 0.25  # Secondary keywords confirm context
+        + hot_s * 0.20  # HOT buyer-intent signals
+        + ec_s * 0.15   # Ecommerce platform context
+    ) - (neg_s * 0.20)  # Penalise off-niche keywords
 
     score = round(max(0.0, min(100.0, raw)), 1)
 
     explanation = {
-        "repetitive_task":  {"score": round(rep_s),    "matched": rep_m},
-        "structured_input": {"score": round(struct_s),  "matched": struct_m},
-        "recurring_output": {"score": round(out_s),     "matched": out_m},
-        "operations_role":  {"score": round(role_s),    "matched": role_m},
-        "scale_volume":     {"score": round(scale_s),   "matched": scale_m},
-        "penalty":          {"score": round(pen_s),     "matched": pen_m},
+        "primary_keywords":   {"score": round(prim_s), "matched": prim_m},
+        "secondary_keywords": {"score": round(sec_s),  "matched": sec_m},
+        "hot_signals":        {"score": round(hot_s),  "matched": hot_m},
+        "ecommerce_context":  {"score": round(ec_s),   "matched": ec_m},
+        "negative_keywords":  {"score": round(neg_s),  "matched": neg_m},
     }
     return score, explanation
 
@@ -197,7 +203,7 @@ def score_win_likelihood(job):
     explanation["hire_rate_bonus"] = hire_bonus
     bonuses += hire_bonus
 
-    # Budget adequacy
+    # Budget adequacy (updated thresholds for niche pricing)
     budget_bonus = 0.0
     if job.get("budget_type") == "fixed" and float(job.get("budget_min") or 0) >= WIN_THRESHOLDS["good_budget_fixed_min"]:
         budget_bonus = 10.0
@@ -230,25 +236,25 @@ def score_win_likelihood(job):
 # ── Combined ──────────────────────────────────────────────────────────────────
 
 def compute_scores(job, theme=None):
-    automation_score, auto_exp = score_automation(job)
+    specialization_score, spec_exp = score_specialization(job)
     relevance_score, rel_exp = score_relevance(job, theme)
     win_score, win_exp = score_win_likelihood(job)
 
     combined = round(
         relevance_score * WEIGHTS["relevance"]
-        + automation_score * WEIGHTS["automation"]
+        + specialization_score * WEIGHTS["automation"]
         + win_score * WEIGHTS["win_likelihood"],
         1,
     )
 
     return {
         "relevance_score": relevance_score,
-        "automation_score": automation_score,
+        "automation_score": specialization_score,   # DB column kept as automation_score
         "win_likelihood_score": win_score,
         "combined_score": combined,
         "explanation": {
             "relevance": rel_exp,
-            "automation": auto_exp,
+            "specialization": spec_exp,             # Key updated for UI/proposal logic
             "win_likelihood": win_exp,
         },
     }

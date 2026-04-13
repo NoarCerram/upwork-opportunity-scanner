@@ -379,7 +379,7 @@ elif page == "📋 Review Queue":
                     st.markdown("**Scores**")
                     sc1, sc2 = st.columns(2)
                     sc1.metric("Relevance", f"{rel:.0f}" if rel is not None else "—")
-                    sc2.metric("Automation", f"{auto:.0f}" if auto is not None else "—")
+                    sc2.metric("Niche Fit", f"{auto:.0f}" if auto is not None else "—")
                     sc1.metric("Win", f"{win:.0f}" if win is not None else "—")
                     sc2.metric("Combined", f"{combined:.0f}" if combined is not None else "—")
 
@@ -388,8 +388,8 @@ elif page == "📋 Review Queue":
                         try:
                             exp = json.loads(job["explanation_json"])
                             with st.expander("Score details"):
-                                auto_exp = exp.get("automation", {})
-                                for dim, data in auto_exp.items():
+                                spec_exp = exp.get("specialization", {})
+                                for dim, data in spec_exp.items():
                                     if isinstance(data, dict) and data.get("matched"):
                                         st.caption(f"**{dim}**: {', '.join(data['matched'][:5])}")
                         except Exception:
@@ -590,7 +590,7 @@ elif page == "📤 Export":
             "budget_type", "budget_min", "budget_max", "hourly_min", "hourly_max",
             "skills_json", "client_country", "client_payment_verified",
             "client_spend_text", "client_hire_rate_text",
-            "relevance_score", "automation_score", "win_likelihood_score", "combined_score",
+            "relevance_score", "automation_score", "win_likelihood_score", "combined_score",  # automation_score = niche fit
             "opportunity_hypothesis", "proposal_angle",
             "status", "notes", "applied_at", "outcome", "source_method",
         ]
@@ -614,7 +614,7 @@ elif page == "📤 Export":
             df = pd.DataFrame(rows)
             preview_cols = [
                 c for c in
-                ["title", "search_theme", "combined_score", "automation_score",
+                ["title", "search_theme", "combined_score", "automation_score",  # automation_score = niche fit
                  "budget_type", "budget_min", "status"]
                 if c in df.columns
             ]

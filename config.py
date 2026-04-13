@@ -25,9 +25,10 @@ def get_database_url():
 DATABASE_URL = get_database_url()
 
 # Combined score weights (must sum to 1.0)
+# "automation" key kept for DB column compatibility — it now stores "niche fit" score.
 WEIGHTS = {
-    "relevance": 0.40,
-    "automation": 0.35,
+    "relevance": 0.45,
+    "automation": 0.30,   # stores specialization / niche-fit score
     "win_likelihood": 0.25,
 }
 
@@ -35,127 +36,164 @@ WEIGHTS = {
 SCORE_HIGH = 75
 SCORE_MODERATE = 50
 
-# ── Automation signal dictionaries ───────────────────────────────────────────
+# ── Niche: 3D Product Visual Specialist ──────────────────────────────────────
+# These replace the old automation signals entirely.
 
-AUTOMATION_SIGNALS = {
-    "repetitive_task": [
-        "daily", "weekly", "monthly", "recurring", "ongoing", "regularly",
-        "routine", "every day", "every week", "each week", "each month",
-        "repeated", "repetitive", "on a regular basis", "on an ongoing basis",
-        "data entry", "copy paste", "copy and paste", "manual entry",
-        "update records", "maintain records", "keep updated",
-        "enter data", "input data", "upload", "log entries",
+NICHE_SIGNALS = {
+    # Primary keywords — exact phrases from active job listings (highest match weight)
+    "primary_keywords": [
+        "3d product render",
+        "product mockup",
+        "3d product modeling",
+        "product visualization",
+        "3d ecommerce render",
+        "product listing images",
+        "3d product design",
+        "ecommerce product render",
+        "product photography 3d",
+        "ai product visualization",
+        "3d product mockup",
+        "product render amazon",
+        "product render shopify",
+        "3d lifestyle render",
+        "product infographic 3d",
     ],
-    "structured_input": [
-        "hubspot", "salesforce", "pipedrive", "zoho crm", "crm",
-        "excel", "google sheets", "spreadsheet", "airtable", "notion",
-        "asana", "monday.com", "trello", "jira", "clickup",
-        "shopify", "woocommerce", "bigcommerce", "magento",
-        "ats", "applicant tracking", "linkedin", "indeed",
-        "database", "sql", "csv", "api",
-        "mailchimp", "klaviyo", "activecampaign",
-        "quickbooks", "xero", "freshbooks",
-        "google drive", "dropbox", "sharepoint",
+
+    # Secondary keywords — supporting phrases in descriptions (moderate weight)
+    "secondary_keywords": [
+        "ecommerce visuals",
+        "listing optimization visuals",
+        "amazon a+ content design",
+        "product page mockups",
+        "social media product ads",
+        "product ad creatives",
+        "dtc product visuals",
+        "product photography replacement",
+        "listing image designer",
+        "product visual designer",
+        "3d packaging mockup",
+        "360 product render",
+        "product comparison visual",
     ],
-    "recurring_output": [
-        "report", "reports", "reporting", "summary", "summaries",
-        "lead list", "prospect list", "contact list",
-        "weekly update", "daily update", "monthly report",
-        "dashboard", "tracker", "tracking",
-        "extract", "extraction", "scrape", "compile",
-        "monitor", "monitoring", "alert", "digest",
-        "invoice", "invoicing", "reconcile",
+
+    # HOT signals — flag job as high-priority immediately
+    "hot_signals": [
+        "need product renders for amazon listing",
+        "replace product photos with 3d",
+        "ecommerce product visualization",
+        "make my product look premium",
+        "360 product views",
+        "lifestyle product shots",
+        "ai-assisted",
+        "fast turnaround",
+        "listing image",
+        "product render",
+        "amazon listing",
+        "shopify product",
+        "product photos suck",
+        "better listing images",
+        "7-9 images",
+        "a+ content",
+        "hero shot",
+        "lifestyle image",
     ],
-    "operations_role": [
-        "virtual assistant", "va ", "executive assistant",
-        "data entry", "data operator", "data analyst",
-        "operations", "ops", "coordinator", "admin", "administrative",
-        "researcher", "research assistant",
-        "lead generation", "lead gen",
-        "outreach", "sourcing",
-        "customer support", "customer service",
-        "email management", "inbox management",
-        "scheduling", "calendar management",
-        "catalog", "product data", "product listing",
-        "ecommerce", "e-commerce",
-        "order management", "fulfillment",
-    ],
-    "scale_volume": [
-        "large volume", "high volume", "bulk",
-        "hundreds", "thousands", "many records",
-        "at scale", "scalable",
-        "ongoing basis", "long term", "long-term",
-        "part time", "part-time", "full time", "full-time",
-        "hours per week", "hrs/week", "hrs per week",
+
+    # Ecommerce platform/context signals (confirm the right buyer profile)
+    "ecommerce_context": [
+        "amazon",
+        "shopify",
+        "listing",
+        "product page",
+        "ecommerce",
+        "e-commerce",
+        "dtc",
+        "direct to consumer",
+        "fba",
+        "fulfillment by amazon",
+        "a+ content",
+        "asin",
+        "sku",
+        "product launch",
+        "brand store",
     ],
 }
 
-AUTOMATION_PENALTIES = [
-    "strategic advisory", "executive coaching", "therapy",
-    "legal advice", "legal counsel", "medical advice",
-    "creative direction", "art direction", "brand strategy",
-    "high-level strategy", "investor relations",
-    "business development", "c-suite", "ceo ", "cto ", "cfo ",
-    "bespoke design", "custom artwork", "illustration",
-    "relationship manager", "account executive",
+# Negative keywords — exclude to avoid generic / off-niche work
+NICHE_NEGATIVE_KEYWORDS = [
+    "logo design",
+    "character modeling",
+    "architectural render",
+    "game asset",
+    "nft art",
+    "interior design",
+    "game character",
+    "architecture visualization",
+    "floor plan",
+    "building render",
+    "nft",
+    "character animation",
+    "2d illustration",
+    "cartoon",
+    "explainer video",
 ]
 
 # ── Win-likelihood thresholds ─────────────────────────────────────────────────
+# Raised fixed minimum to $200 and hourly to $100 to match niche pricing.
 
 WIN_THRESHOLDS = {
     "fresh_hours_great": 6,
     "fresh_hours_good": 24,
     "fresh_hours_ok": 72,
-    "good_budget_fixed_min": 150,
-    "good_budget_hourly_min": 18,
+    "good_budget_fixed_min": 200,    # $200+ fixed (filters out $15/hr data entry)
+    "good_budget_hourly_min": 100,   # $100+ hourly
 }
 
 # ── Default search themes seeded on first run ────────────────────────────────
 
 DEFAULT_THEMES = [
     {
-        "name": "CRM cleanup + lead generation",
-        "query_text": "CRM cleanup lead generation",
-        "include_keywords_json": '["crm", "lead", "cleanup", "database", "salesforce", "hubspot"]',
-        "exclude_keywords_json": '["senior director", "vp ", "c-suite"]',
-        "desired_skills_json": '["CRM", "Data Entry", "Lead Generation"]',
-        "min_budget": 50,
+        "name": "3D Product Renders – Amazon & Shopify",
+        "query_text": "3D product render amazon shopify listing",
+        "include_keywords_json": '["3d product render", "product render", "product mockup", "listing images", "amazon", "shopify"]',
+        "exclude_keywords_json": '["logo design", "character modeling", "architectural render", "game asset", "nft", "interior design"]',
+        "desired_skills_json": '["3D Rendering", "Product Visualization", "Blender", "Cinema 4D", "Keyshot", "Product Mockup"]',
+        "min_budget": 200,
         "contract_type": "any",
     },
     {
-        "name": "VA + reporting + spreadsheet",
-        "query_text": "virtual assistant reporting spreadsheet",
-        "include_keywords_json": '["virtual assistant", "report", "spreadsheet", "excel", "google sheets"]',
-        "exclude_keywords_json": '[]',
-        "desired_skills_json": '["Virtual Assistance", "Microsoft Excel", "Google Sheets"]',
-        "min_budget": 30,
+        "name": "Product Visualization & Mockups",
+        "query_text": "product visualization mockup ecommerce visuals",
+        "include_keywords_json": '["product visualization", "product mockup", "ecommerce visuals", "product photography replacement", "3d mockup"]',
+        "exclude_keywords_json": '["logo design", "character modeling", "architectural render", "game asset", "nft", "interior design"]',
+        "desired_skills_json": '["Product Visualization", "3D Modeling", "Blender", "Adobe Dimension", "Product Mockup"]',
+        "min_budget": 200,
         "contract_type": "any",
     },
     {
-        "name": "Research + extraction + monitoring",
-        "query_text": "research extraction data monitoring",
-        "include_keywords_json": '["research", "extract", "monitor", "compile", "data"]',
-        "exclude_keywords_json": '[]',
-        "desired_skills_json": '["Research", "Data Entry", "Web Scraping"]',
-        "min_budget": 50,
+        "name": "Amazon A+ Content & Listing Images",
+        "query_text": "amazon listing images A+ content product images",
+        "include_keywords_json": '["amazon", "listing images", "a+ content", "product images", "ecommerce", "listing optimization"]',
+        "exclude_keywords_json": '["logo design", "character modeling", "architectural render", "game asset", "nft"]',
+        "desired_skills_json": '["Amazon Listing Optimization", "Product Photography", "3D Rendering", "Graphic Design", "A+ Content"]',
+        "min_budget": 150,
         "contract_type": "any",
     },
     {
-        "name": "Recruiting coordination + sourcing",
-        "query_text": "recruiting coordinator sourcing",
-        "include_keywords_json": '["recruiting", "sourcing", "ats", "linkedin", "candidates", "coordinator"]',
-        "exclude_keywords_json": '[]',
-        "desired_skills_json": '["Recruiting", "Sourcing", "LinkedIn Recruiting"]',
-        "min_budget": 50,
+        "name": "AI Product Visuals & Fast Turnaround",
+        "query_text": "AI product visuals 3d render fast turnaround ecommerce",
+        "include_keywords_json": '["ai product", "ai-assisted", "product visuals", "fast turnaround", "3d render", "product image"]',
+        "exclude_keywords_json": '["logo design", "character modeling", "architectural render", "game asset", "nft", "interior design"]',
+        "desired_skills_json": '["AI Image Generation", "Midjourney", "Product Visualization", "3D Rendering", "Blender"]',
+        "min_budget": 150,
         "contract_type": "any",
     },
     {
-        "name": "Ecommerce ops + catalog updates",
-        "query_text": "ecommerce operations catalog product data",
-        "include_keywords_json": '["ecommerce", "shopify", "product", "catalog", "listing", "inventory"]',
-        "exclude_keywords_json": '[]',
-        "desired_skills_json": '["Shopify", "Product Listings", "Data Entry"]',
-        "min_budget": 50,
+        "name": "Lifestyle & Social Media Product Ads",
+        "query_text": "lifestyle product render social media ad mockup DTC brand",
+        "include_keywords_json": '["lifestyle", "product ads", "social media", "dtc", "brand", "product mockup", "ad creative"]',
+        "exclude_keywords_json": '["logo design", "character modeling", "architectural render", "game asset", "nft", "interior design"]',
+        "desired_skills_json": '["Product Mockup", "Social Media Design", "3D Rendering", "Lifestyle Photography", "Ad Creative"]',
+        "min_budget": 150,
         "contract_type": "any",
     },
 ]

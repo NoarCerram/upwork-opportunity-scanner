@@ -1,84 +1,123 @@
 def generate_proposal(job, scores, hypothesis_text=""):
     title = (job.get("title") or "this project").lower().strip()
-    automation_score = scores.get("automation_score", 0)
+    specialization_score = scores.get("automation_score", 0)
     win_score = scores.get("win_likelihood_score", 0)
 
     try:
-        auto_exp = scores.get("explanation", {}).get("automation", {})
-        struct_matched = auto_exp.get("structured_input", {}).get("matched", [])
-        pen_matched = auto_exp.get("penalty", {}).get("matched", [])
+        spec_exp = scores.get("explanation", {}).get("specialization", {})
+        primary_matched = spec_exp.get("primary_keywords", {}).get("matched", [])
+        hot_matched = spec_exp.get("hot_signals", {}).get("matched", [])
+        neg_matched = spec_exp.get("negative_keywords", {}).get("matched", [])
+        ec_matched = spec_exp.get("ecommerce_context", {}).get("matched", [])
     except Exception:
-        struct_matched = []
-        pen_matched = []
+        primary_matched = []
+        hot_matched = []
+        neg_matched = []
+        ec_matched = []
+
+    budget_min = float(job.get("budget_min") or job.get("hourly_min") or 0)
+    platform = "Amazon" if "amazon" in " ".join(ec_matched).lower() else (
+        "Shopify" if "shopify" in " ".join(ec_matched).lower() else "your store"
+    )
 
     # ── Diagnosis ──────────────────────────────────────────────────────────────
-    if struct_matched:
-        tools = ", ".join(struct_matched[:2])
+    if primary_matched:
+        kws = ", ".join(primary_matched[:2])
         diagnosis = (
-            f"The client needs ongoing support with {title}, working primarily in {tools}. "
-            "The core challenge appears to be recurring manual work that needs consistent, reliable execution."
+            f"The client needs professional product visuals for {platform} — "
+            f"specifically {kws}. "
+            "Their core pain point: current images aren't converting, "
+            "and a traditional studio shoot is too slow or expensive."
+        )
+    elif hot_matched:
+        diagnosis = (
+            f"The client is looking for high-quality product visuals to improve {platform} performance. "
+            "They want images that look premium without the cost of a photography studio. "
+            "This is exactly the gap that AI-assisted 3D rendering solves."
         )
     else:
         diagnosis = (
-            f"The client needs reliable support with {title}. "
-            "The core challenge appears to be recurring operational work that needs consistent "
-            "execution and clear documentation."
+            f"The client needs product visual support for {title}. "
+            "Their likely pain point: product images that don't convert, "
+            "and a need for professional-looking visuals on a realistic budget."
         )
 
     # ── Positioning ────────────────────────────────────────────────────────────
-    if automation_score >= 70:
+    if specialization_score >= 70:
         positioning = (
-            "Position as an operator who executes tasks and builds lightweight systems to make "
-            "them faster and more reliable over time. Differentiate from pure VAs by offering "
-            "process improvement alongside execution."
+            "Position as a conversion-focused product visual specialist — not a generic 3D artist. "
+            "Your edge: you understand ecommerce buyer psychology and deliver marketing renders, "
+            "not just technical models. "
+            "Emphasise AI-accelerated workflow = faster delivery + lower cost than studio alternatives."
         )
-    elif automation_score >= 45:
+    elif specialization_score >= 45:
         positioning = (
-            "Position as a structured operator who documents processes and identifies efficiency "
-            "improvements. Offer a short discovery phase to map the workflow before execution."
+            "Position as a product visual specialist who bridges the gap between expensive studio photography "
+            "and amateur DIY images. "
+            "Lead with a single strong example from your portfolio that matches their product category. "
+            "Offer a sample render as a low-risk entry point."
         )
     else:
         positioning = (
-            "Position as a reliable, detail-oriented operator with relevant domain experience. "
-            "Focus on quality, turnaround time, and clear communication as differentiators."
+            "Position as a reliable visual creator with ecommerce experience. "
+            "Keep the proposal short — ask one qualifying question to confirm they need 3D renders "
+            "specifically, before investing Connects on a potentially off-niche job."
         )
 
     # ── Opening Paragraph ──────────────────────────────────────────────────────
-    if automation_score >= 70:
+    if specialization_score >= 70:
         opening = (
-            f"I've handled exactly this kind of work before — where the core need is reliable "
-            f"execution, but the underlying workflow has room to become faster and more systematic. "
-            f"I'd take care of the immediate tasks while also surfacing small, practical improvements "
-            f"that reduce your manual workload over time."
+            "I specialise in exactly this: conversion-focused product visuals for ecommerce listings. "
+            "Using AI-assisted 3D rendering, I can deliver a full image set — hero shots, lifestyle scenes, "
+            "infographics — in days, not weeks, and at a fraction of what a studio shoot would cost. "
+            "The difference isn't just aesthetics: I build images around what actually makes buyers click Add to Cart."
+        )
+    elif specialization_score >= 45:
+        opening = (
+            "I work with ecommerce brands to create product visuals that actually convert — "
+            "professional-grade renders and mockups without the studio budget. "
+            "I'd love to understand your current images and show you what a 3D visual upgrade would look like for your product."
         )
     else:
         opening = (
-            f"I have direct experience with the type of work you're describing. "
-            f"I focus on reliable execution, clear communication, and documented processes "
-            f"so nothing falls through the cracks as we work together."
+            "I create product visuals for ecommerce brands — 3D renders, mockups, and lifestyle images "
+            "that work for Amazon listings, Shopify pages, and social ads. "
+            "Happy to share relevant examples if this sounds like what you need."
         )
 
     # ── Soft Upsell ────────────────────────────────────────────────────────────
-    if automation_score >= 60:
+    if budget_min >= 400 or specialization_score >= 65:
         upsell = (
-            "After the first week or two, I can share a short workflow map showing which parts "
-            "of this work could be partially automated — with no obligation to pursue it further "
-            "if the manual approach is working well."
+            "Once we've nailed the core listing images, I can extend the same visual set "
+            "into social media ad formats and A+ Content modules — "
+            "one shoot, multiple deliverables across all your channels."
+        )
+    elif specialization_score >= 40:
+        upsell = (
+            "If the first image set performs well, I can produce additional SKU variations "
+            "or seasonal lifestyle scenes from the same base models at a reduced rate."
         )
     else:
         upsell = ""
 
     # ── Caution ────────────────────────────────────────────────────────────────
     caution_parts = []
-    if pen_matched:
+    if neg_matched:
         caution_parts.append(
-            f"Bespoke/high-judgment signals detected ({', '.join(pen_matched[:2])}). "
-            "Avoid leading with automation — emphasise reliability and expertise instead."
+            f"Off-niche signals detected ({', '.join(neg_matched[:2])}). "
+            "Verify the job is actually about product visuals before applying — "
+            "do not pitch 3D rendering if they want logos or character art."
         )
     if win_score < 40:
         caution_parts.append(
             "Low win-likelihood (high competition or weak client signals). "
-            "Consider whether Connects are worth spending here."
+            "Consider whether Connects are worth spending here — "
+            "prioritise HOT jobs with fresh postings and verified payment."
+        )
+    if budget_min and budget_min < 150:
+        caution_parts.append(
+            f"Budget (${budget_min:.0f}) is below the recommended minimum ($200 fixed / $100/hr). "
+            "You may want to pass or use this as a portfolio-builder only."
         )
     caution = " ".join(caution_parts)
 
