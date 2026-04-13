@@ -4,4 +4,5 @@ beautifulsoup4
 python-dotenv
 pandas
 psycopg2-binary
+anthropic>=0.40.0
 playwright
